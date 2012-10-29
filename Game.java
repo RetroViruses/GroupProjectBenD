@@ -17,15 +17,19 @@ public class Game {
 	private int startTime = this.getStartTime();
 	private int timeToSolve=0;
 	//stores the string that keeps track of which global dictionary to use
-	private String currentDict;
+	//private String currentDict;
 	//word that the user inputs, the six letter word
 	private String inWord;
 	private String sixLetter;
 	//array of the usable characters in this puzzle
-	private char[] letters;
+	private char[] letters=new char[6];
 	//facebook ID
 	private int fbID=1337;
-	
+	//stores any incorrectly guessed words
+	//private ArrayList<String> wrongWords;
+	private String gameType;
+	//locally stored dictionary
+	private Dictionary localDict;
 	//Constants
 	///////////
 	private int SCORE_MOD=40;
@@ -33,16 +37,19 @@ public class Game {
 	
 	//Constructors
 	//////////////
-	
+
 	public Game(){
 		currentScore=0;
 		timeToPlay=startTime;
+		gameType="random";
 	}	
 	
 	public Game(String sixLetterWord){
 		currentScore=0;
 		timeToPlay=startTime;
 		sixLetter=sixLetterWord;
+		letters=sixLetterWord.toCharArray();
+		gameType="random";
 	}
 	
 	public Game(String sixLetterWord,int facebookID){
@@ -50,6 +57,26 @@ public class Game {
 		timeToPlay=startTime;
 		sixLetter=sixLetterWord;
 		fbID=facebookID;
+		letters=sixLetterWord.toCharArray();
+		gameType="random";
+	}	
+	
+	public Game(String sixLetterWord,int facebookID, Dictionary dict){
+		currentScore=0;
+		timeToPlay=startTime;
+		sixLetter=sixLetterWord;
+		fbID=facebookID;
+		letters=sixLetterWord.toCharArray();
+		gameType="random";
+	}	
+	
+	public Game(String sixLetterWord,int facebookID, String typeOfGame){
+		currentScore=0;
+		timeToPlay=startTime;
+		sixLetter=sixLetterWord;
+		fbID=facebookID;
+		letters=sixLetterWord.toCharArray();
+		gameType=typeOfGame;
 	}
 	
 	//Methods
@@ -59,6 +86,10 @@ public class Game {
 		for (int i=0; i<sixLetter.length(); i++){
 			letters[i]=sixLetter.charAt(i);
 		}
+	}	
+
+	public void setSixLetterWord(String newSeed){
+		sixLetter=newSeed;
 	}
 	
 	//shuffles the letters in the character array
@@ -92,43 +123,53 @@ public class Game {
 		return false;
 	}
 	
-	//if the enterword is in the dictionary, adds points to score, removes the word from the dictionary, and returns true
+	//if the enterword is in the dictionary, adds points to score, 
+	//removes the word from the dictionary, and returns true. 
+	//If it isn't a word, stores it and returns false
 	public boolean wordCheck(String enterWord){
-		Dictionary localDict = new Dictionary();
+		//Dictionary localDict = new Dictionary(0);
 		//test line
-		printDict(localDict);
+		//printDict();
 		
 		for(int x=0;x<localDict.length();x++){
-			if (localDict.dictContent.equals(enterWord)){
-				this.updateScore(enterWord.length());
+			if (localDict.solutions.get(x).equals(enterWord)){
 				//test line
-				System.out.println(localDict.dictContent[x]);
+				System.out.println(localDict.solutions.get(x));
 				System.out.println(enterWord);
 				if (enterWord.length()==6){
 					timeToSolve=startTime-timeToPlay;
 				}
 				localDict.removeWord(x);
-				//test line
-				System.out.println(x);
-				
-				return true;
+				//score updates
+				this.updateScore(enterWord.length());
+				System.out.println("The current score is: " + currentScore);
 			}
+			return true;
+				
 		}
+		System.out.println(enterWord + " is not valid");
 		return false;
+		
 	}
 	
-	public void printDict(Dictionary localDict){
+	
+	public void printDict(){
 			for(int x=0;x<localDict.length();x++){
 				localDict.print(x);
 			}
 	}
 	
-	//adds the 
+	//adds the points from the correctly guessed word to currentScore
 	public void updateScore(int toAdd){
+		addScore=inWord.length()*SCORE_MOD;
+		if (addScore==6*SCORE_MOD){
+			addScore=addScore+BONUS;
+		}
+		updateScore(addScore);
 		currentScore=currentScore+toAdd;
 	}
 	
-	public void scoring(){
+	/*public void scoring(){
 		if (wordCheck(inWord)){
 			addScore=inWord.length()*SCORE_MOD;
 			if (addScore==6*SCORE_MOD){
@@ -136,20 +177,44 @@ public class Game {
 			}
 			updateScore(addScore);
 		}
-	}
+	}*/
 	
 	public int getStartTime(){
 		return 120;
 	}
 	
-	public int returnFacebookID(){
-		return fbID;
+	public String getGameType(){
+		return gameType;
 	}
 	
-	public String getDictType(){
-		return "bigone";
+	public String getRandom(){
+		Dictionary dictRand = new Dictionary(0);
+		String randWord;
+		shuffleDict(dictRand);
+		for (int x=0; x<dictRand.length();x++){
+			randWord=dictRand.solutions.get(x);
+			System.out.println(randWord);
+			if (randWord.length()==6){
+				System.out.println(randWord);
+				return randWord;
+			}
+		}
+		return "errors";
 	}
 	
+
+	 
+	 public void shuffleDict(Dictionary toShuffle){
+				Random rNum = new Random();  // Random number generator
+				 
+				//Shuffle by exchanging each element randomly
+				for (int i=0; i < toShuffle.length(); i++) {
+					int randomPosition = rNum.nextInt(toShuffle.length());
+					String temp = toShuffle.solutions.get(i);
+					toShuffle.solutions.set(i, toShuffle.solutions.get(randomPosition));
+					toShuffle.solutions.set(randomPosition, temp);
+				}
+	 }
 	//when the user's time runs out, creates a new puzzleData object and returns true, otherwise returns false
 	public boolean timeOut(PuzzleData shellData){
 		if (timeToPlay==0){
@@ -166,8 +231,9 @@ public class Game {
 	public void getInput(){
 		try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("input:");
+            System.out.println("Enter a word of those letters:");
             String puzzleWord = reader.readLine();
+            System.out.println(puzzleWord);
     		wordCheck(puzzleWord);
 		}
 		catch(IOException e){
@@ -176,12 +242,17 @@ public class Game {
 	}
 	
 	public static void main(String[] args){
-		Game newGame = new Game("abcdef");
+		Game newGame = new Game();
+		String gameSeed=newGame.getRandom();
+		newGame.localDict=new Dictionary(gameSeed);
+		newGame.setLetters(gameSeed);
+		newGame.setSixLetterWord(gameSeed);
+		newGame.shuffle(gameSeed.toCharArray());
 		PuzzleData newData=null;
 		boolean stop = false;
 		
-		newGame.assignLetters();
 		while(stop==false){
+			newGame.shuffle(newGame.letters);
 			System.out.println(newGame.letters);
 			newGame.getInput();
 			//is set to true if the time has run out

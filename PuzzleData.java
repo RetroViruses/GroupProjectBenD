@@ -12,7 +12,7 @@ public class PuzzleData {
 		puzzleSeed=seed;
 		fbID=facebookID;
 	}
-
+	
 	public int getScore(){
 		return score;
 	}
